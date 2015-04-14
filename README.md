@@ -1,4 +1,4 @@
-<h1>YQuotes</h1>
+s<h1>YQuotes</h1>
 <p>Simple way to get stock quotes from Yahoo Finance.</p>
 <p>
   <ul>
@@ -20,7 +20,7 @@
 </p>
 
 <pre>
-  // Get stock information without historical data.
+  // Get stock information without historical data. If you want to load 
   stock, err := yquotes.NewStock("AAPL", false)
   if err != nil {
     // handle error
@@ -39,6 +39,43 @@
   date      := price.Date 
 </pre>
 
+<h3>Get historical information</h3>
+<h4>History for selected number of years</h4>
+
+<p>
+  Function <code>HistoryForYears</code> accepts three parameters: symbol, number of 
+  years and frequency (daily, monthly). Frequency is defined by static variables 
+  <code>yquotes.[.Daily, .Weekly, .Monthly, .Yearly]</code>
+</p>
+
+<pre>
+  // Get historical prices for the last 3 years.
+  prices, err := yquotes.HistoryForYears("AAPL", 3, yquotes.Daily)
+  if err != nil {
+    // handle error
+  }
+}
+</pre>
+
+<h4>Get historical prices between two dates</h4>
+<p>
+  Function <code>GetDailyHistory</code> accepts three arguments: symbol, date1 (from)
+  date2 (to). Function returns list hisptorical prices <code>[]PriceH</code>. Dates are of time.Time type.
+</p>
+
+<pre>
+  // Define layout of date. 
+  layout := "2006-01-02"
+  from := time.Parse(layout, "2012-01-01")
+  to   := time.Now()
+
+  prices, err := yquotes.GetDailyHistory("AAPL", from, to)
+  if err != nil {
+
+  }
+</pre>
+
+<h3>Data types</h3>
 <h4>Stock type</h4>
 
 <p>
@@ -66,8 +103,8 @@
 
 <h4>Price type</h4>
 
+<p>Price struct represents price in single point in time.</p>
 <pre>
-  // Price struct represents price in single point in time.
   type Price struct {
     Bid           float64   `json:"bid,omitempty"`
     Ask           float64   `json:"ask,omitempty"`
@@ -80,6 +117,7 @@
 
 <h4>Historical price type</h4>
 
+<p>This type represents row of historical price data.</p>
 <pre>
   type PriceH struct {
     Date     time.Time `json:"date,omitempty"`
