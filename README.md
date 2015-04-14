@@ -22,7 +22,7 @@
 <p>Load stock information without historical data.</p>
 
 <p>
-  <code>
+  <pre>
     stock, err := yquotes.NewStock("AAPL", false)
     if err != nil {
       // handle error
@@ -39,5 +39,5 @@
     prevClose := price.PreviousClose
     last := price.Last
     date := price.Date 
-  </code>
+  </pre>
 </p>
