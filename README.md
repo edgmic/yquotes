@@ -20,7 +20,8 @@ s<h1>YQuotes</h1>
 </p>
 
 <pre>
-  // Get stock information without historical data. If you want to load 
+  // Get stock information without historical data. If you want to load historical
+  // data, second argument to <code>TRUE</code>.
   stock, err := yquotes.NewStock("AAPL", false)
   if err != nil {
     // handle error
