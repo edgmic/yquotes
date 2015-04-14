@@ -86,11 +86,144 @@ type Stock struct {
 	Name string `json:"name,omitempty"`
 
 	// Information about last price of stock.
-	Price Price `json:"price,omitempty"`
+	Price *Price `json:"price,omitempty"`
 
 	// Contains historical price information. If client asks information
 	// for recent price, this field will be omited.
 	History []PriceH `json:"history,omitempty"`
+}
+
+// Create new stock with recent price data and historical prices. All the prices
+// are represented in daily basis.
+//
+// symbol - Symbol of company (ticker)
+// history - If true 3 year price history will be loaded.
+// Returns a pointer to value of Stock type.
+func NewStock(symbol string, history bool) (*Stock, error) {
+	var stock *Stock
+
+	data, err := loadSingleStockPrice(symbol)
+	if err != nil {
+		return nil, err
+	}
+	stock = parseStock(data)
+
+	// If history is TRUE, we need to load historical price for 3 year period.
+	if history == true {
+		histPrices, err := HistoryForYears(symbol, 3, Daily)
+		if err != nil {
+			return stock, err
+		}
+		stock.History = histPrices
+	}
+
+	return stock, nil
+}
+
+// Get single stock price data.
+func GetPrice(symbol string) (*Price, error) {
+	data, err := loadSingleStockPrice(symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	price := parsePrice(data)
+	return price, nil
+}
+
+// Get single stock price for certain date.
+func GetPriceForDate(symbol string, date time.Time) (PriceH, error) {
+	var price PriceH
+	// We need to get price information for single date, so date passed to
+	// this function will be used both for "from" and "to" arguments.
+	data, err := loadHistoricalPrice(symbol, date, date, Daily)
+	if err != nil {
+		return price, err
+	}
+
+	prices, err := parseHistorical(data)
+	if err != nil {
+		return PriceH{}, err
+	}
+	price = prices[0]
+
+	// Return single price.
+	return price, nil
+}
+
+// Get historical prices for the stock.
+func GetDailyHistory(symbol string, from, to time.Time) ([]PriceH, error) {
+	var prices []PriceH
+	// Create URL with daily frequency of data.
+	data, err := loadHistoricalPrice(symbol, from, to, Daily)
+	if err != nil {
+		return prices, err
+	}
+
+	prices, err = parseHistorical(data)
+	if err != nil {
+		return prices, err
+	}
+
+	return prices, nil
+}
+
+// Get stock price history for number of years backwards.
+func HistoryForYears(symbol string, years int, period string) ([]PriceH, error) {
+	var prices []PriceH
+	duration := time.Duration(int(time.Hour) * 24 * 365 * years)
+	to := time.Now()
+	from := to.Add(-duration)
+
+	data, err := loadHistoricalPrice(symbol, from, to, period)
+	if err != nil {
+		return prices, err
+	}
+
+	prices, err = parseHistorical(data)
+	if err != nil {
+		return prices, err
+	}
+
+	return prices, nil
+}
+
+// Single company data request to Yahoo Finance.
+func loadSingleStockPrice(symbol string) ([]string, error) {
+	url := singleStockUrl(symbol)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	reader := csv.NewReader(resp.Body)
+	data, err := reader.Read()
+	if err != nil {
+		return nil, err
+	}
+
+	return data, err
+}
+
+// Load historical data price.
+func loadHistoricalPrice(symbol string, from, to time.Time, period string) ([][]string, error) {
+	url := stockHistoryURL(symbol, from, to, period)
+	var data [][]string
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return data, err
+	}
+	defer resp.Body.Close()
+
+	reader := csv.NewReader(resp.Body)
+	data, err = reader.ReadAll()
+	if err != nil {
+		return data, err
+	}
+
+	return data, nil
 }
 
 // Generate request URL for single stock.
@@ -126,14 +259,37 @@ func stockHistoryURL(symbol string, from, to time.Time, frequency string) string
 
 // Parse base information of stock price. Base inforamtion is reperesented by
 // request format BaseFormat.
-func parseStockBase(data []string) *Stock {
+func parseStock(data []string) *Stock {
 	s := &Stock{
 		Symbol: data[0],
 		Name:   data[1],
-		Price:  parsePriceBase(data),
+		Price:  parsePrice(data),
 	}
 
 	return s
+}
+
+// Parse collection of historical prices.
+func parseHistorical(data [][]string) ([]PriceH, error) {
+	// This is the list of prices with allocated space. Length of space should
+	// subtracted by 1 because the first row of data is title.
+	var list = make([]PriceH, len(data)-1)
+	// We need to leave the first row, because it contains title of columns.
+	for k, v := range data {
+		if k == 0 {
+			continue
+		}
+		// Parse row of data into PriceH type and append it to collection of prices.
+		p, err := parseHistoricalRow(v)
+		if err != nil {
+			return list, err
+		}
+
+		// (k - 1) because we remove header from the list so index should be
+		// reduced by one.
+		list[k-1] = p
+	}
+	return list, nil
 }
 
 // Parse data row that comes from historical data. Data row contains
@@ -166,29 +322,6 @@ func parseHistoricalRow(data []string) (PriceH, error) {
 	return p, nil
 }
 
-// Parse collection of historical prices.
-func parseHistorical(data [][]string) ([]PriceH, error) {
-	// This is the list of prices with allocated space. Length of space should
-	// subtracted by 1 because the first row of data is title.
-	var list = make([]PriceH, len(data)-1)
-	// We need to leave the first row, because it contains title of columns.
-	for k, v := range data {
-		if k == 0 {
-			continue
-		}
-		// Parse row of data into PriceH type and append it to collection of prices.
-		p, err := parseHistoricalRow(v)
-		if err != nil {
-			return list, err
-		}
-
-		// (k - 1) because we remove header from the list so index should be
-		// reduced by one.
-		list[k-1] = p
-	}
-	return list, nil
-}
-
 // Parse date from string into time.Time type.
 func parseDate(date string) (time.Time, error) {
 	d, err := time.Parse("1/2/2006", date)
@@ -200,8 +333,8 @@ func parseDate(date string) (time.Time, error) {
 }
 
 // Parse price information from base data.
-func parsePriceBase(data []string) Price {
-	p := Price{}
+func parsePrice(data []string) *Price {
+	p := &Price{}
 	p.Bid, _ = strconv.ParseFloat(data[2], 64)
 	p.Ask, _ = strconv.ParseFloat(data[3], 64)
 	p.Open, _ = strconv.ParseFloat(data[4], 64)
@@ -210,75 +343,4 @@ func parsePriceBase(data []string) Price {
 	p.Date, _ = parseDate(data[7])
 
 	return p
-}
-
-// Get single stock price data.
-func GetPrice(symbol string) (*Stock, error) {
-	url := singleStockUrl(symbol)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	reader := csv.NewReader(resp.Body)
-	data, err := reader.Read()
-	if err != nil {
-		return nil, err
-	}
-
-	stock := parseStockBase(data)
-	return stock, nil
-}
-
-// Get single stock price for certain date.
-func GetPriceForDate(symbol string, date time.Time) (PriceH, error) {
-	// We need to get price information for single date, so date passed to
-	// this function will be used both for "from" and "to" arguments.
-	url := stockHistoryURL(symbol, date, date, Daily)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return PriceH{}, err
-	}
-	defer resp.Body.Close()
-
-	reader := csv.NewReader(resp.Body)
-	data, err := reader.ReadAll()
-	if err != nil {
-		return PriceH{}, err
-	}
-
-	prices, err := parseHistorical(data)
-	if err != nil {
-		return PriceH{}, err
-	}
-	p := prices[0]
-
-	// Return single price.
-	return p, nil
-}
-
-// Get historical prices for the stock.
-func GetDailyHistory(symbol string, from, to time.Time) ([]PriceH, error) {
-	url := stockHistoryURL(symbol, from, to, Daily)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return []PriceH{}, err
-	}
-	defer resp.Body.Close()
-
-	reader := csv.NewReader(resp.Body)
-	data, err := reader.ReadAll()
-	if err != nil {
-		return []PriceH{}, err
-	}
-
-	prices, err := parseHistorical(data)
-	if err != nil {
-		return []PriceH{}, err
-	}
-
-	return prices, nil
 }

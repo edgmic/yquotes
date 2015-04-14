@@ -11,4 +11,9 @@
 <code>go get github.com/doneland/yquotes</code>
 
 <h2>How to use</h2>
-<h3></h3>
+<h3>Get price information of single stock</h3>
+<p>
+  Client can get price information about stock from Finance Yahoo by calling 
+  <code>NewStock(symbol string, history bool)</code> method. It retruns
+  <code>Stock</code> type with recent price information.
+</p>

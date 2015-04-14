@@ -6,13 +6,22 @@ import (
 	"time"
 )
 
+// Create new stock object with recent price information and historical
+// prices.
+func TestCreateStock(t *testing.T) {
+	symbol := "AAPL"
+	stock, err := NewStock(symbol, true)
+	test.Ok(t, err)
+	test.Equals(t, symbol, stock.Symbol)
+}
+
 // Get stock price data.
 func TestGetStockPrice(t *testing.T) {
 	symbol := "AAPL"
-	stock, err := GetPrice(symbol)
+	price, err := GetPrice(symbol)
 
 	test.Ok(t, err)
-	test.Equals(t, symbol, stock.Symbol)
+	test.Assert(t, price.Bid != 0, "Bid price should not be equal to zero.")
 }
 
 // Get stock price history.
