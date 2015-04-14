@@ -32,12 +32,13 @@
     name := stock.Name // Apple Inc.
     
     // Price information
-    price := stock.Price 
-    bid := price.Bid
-    ask := price.Ask
-    open := price.Open
+    price     := stock.Price 
+    bid       := price.Bid
+    ask       := price.Ask
+    open      := price.Open
     prevClose := price.PreviousClose
-    last := price.Last
-    date := price.Date 
+    last      := price.Last
+    date      := price.Date 
+    
   </pre>
 </p>
