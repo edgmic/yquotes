@@ -171,7 +171,7 @@ func GetDailyHistory(symbol string, from, to time.Time) ([]PriceH, error) {
 // Get stock price history for number of years backwards.
 func HistoryForYears(symbol string, years int, period string) ([]PriceH, error) {
 	var prices []PriceH
-	duration := time.Duration(int(time.Hour) * 24 * 365 * years)
+	duration := time.Duration(int64(time.Hour) * 24 * 365 * int64(years))
 	to := time.Now()
 	from := to.Add(-duration)
 
