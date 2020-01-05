@@ -1,3 +1,5 @@
+<h1>Not supported any more</h1>
+
 <h1>YQuotes</h1>
 <p>Simple way to get stock quotes from Yahoo Finance.</p>
 <p>
