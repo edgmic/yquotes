@@ -120,7 +120,7 @@ func NewStock(symbol string, history bool) (*Stock, error) {
 	return stock, nil
 }
 
-// Get single stock price data.
+// GetPrice gets single stock price data.
 func GetPrice(symbol string) (*Price, error) {
 	data, err := loadSingleStockPrice(symbol)
 	if err != nil {
@@ -131,7 +131,7 @@ func GetPrice(symbol string) (*Price, error) {
 	return price, nil
 }
 
-// Get single stock price for certain date.
+// GetPriceForDate gets single stock price for certain date.
 func GetPriceForDate(symbol string, date time.Time) (PriceH, error) {
 	var price PriceH
 	// We need to get price information for single date, so date passed to
@@ -151,7 +151,7 @@ func GetPriceForDate(symbol string, date time.Time) (PriceH, error) {
 	return price, nil
 }
 
-// Get historical prices for the stock.
+// GetDailyHistory gets historical prices for the stock.
 func GetDailyHistory(symbol string, from, to time.Time) ([]PriceH, error) {
 	var prices []PriceH
 	// Create URL with daily frequency of data.
@@ -168,7 +168,7 @@ func GetDailyHistory(symbol string, from, to time.Time) ([]PriceH, error) {
 	return prices, nil
 }
 
-// Get stock price history for number of years backwards.
+// HistoryForYears gets stock price history for number of years backwards.
 func HistoryForYears(symbol string, years int, period string) ([]PriceH, error) {
 	var prices []PriceH
 	duration := time.Duration(int64(time.Hour) * 24 * 365 * int64(years))
