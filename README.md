@@ -82,7 +82,7 @@
 <h4>Stock type</h4>
 
 <p>
-  Notice that properies <code>Price</code> and <code>History</code> have different 
+  Notice that properties <code>Price</code> and <code>History</code> have different 
   types of price data. This is because historical data row has different data columns.
 </p>
 
